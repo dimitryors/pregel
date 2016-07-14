@@ -1,13 +1,15 @@
-<a href="http://tarantool.org">
+<!--a href="http://tarantool.org">
 	<img src="https://avatars2.githubusercontent.com/u/2344919?v=2&s=250" align="right">
-</a>
+</a-->
 <a href="https://travis-ci.org/tarantool/pregel">
 	<img src="https://travis-ci.org/tarantool/pregel.png?branch=master" align="right">
 </a>
 
 # Large scale graph processing based on Tarantool
 
-Based on [Pregel whitepaper](http://kowshik.github.io/JPregel/pregel_paper.pdf).
+Based on [Pregel whitepaper](http://kowshik.github.io/JPregel/pregel_paper.pdf).  
+Written by Kowshik Prakasam and Manasa Chandrasheka.  
+Original site located [here](http://kowshik.github.io/JPregel/index.html).
 
 As 'abstract' says:
 
@@ -27,7 +29,7 @@ As 'abstract' says:
 > The result is a framework for processing large graphs that is expressive
 > and easy to program.
 
-It's API was inspired by Apache Giraph.
+It's API was inspired by [Apache Giraph](http://giraph.apache.org/).
 
 ## Configuration options
 
@@ -202,6 +204,9 @@ master:save_snapshot()
 
 ### Worker node
 
+Worker node is the basic computing unit. It can't be parallelized, for now.  
+Worker maintains it's state and it's part of data (vertices and ingoing/outgoing messages).
+
 * `master:add_aggregator(name, options)` - add agreggator.
 
 	Possible options are:
@@ -218,7 +223,13 @@ master:save_snapshot()
 ### Vertex
 
 Vertex is the least and main part of this process. Compute function is applied
-to each vertex on each worker node.
+to each vertex on each worker node. It consists of the next fields:
+
+* Name of vertex
+* Is halted flag
+* Vertex value
+* Outgoing edges (pairs of \<destination name, vertex 'weight' (it's value)\>)
+* All incoming messages
 
 #### API
 
@@ -271,6 +282,10 @@ to each vertex on each worker node.
 * `vertex:send_message(receiver_id, msg)` - send message to vertex with ID
 	`receiver_id`
 
+:ledger: Also, under the hood, every contact with other node uses message passing,
+so you may have ability to send arbitrary message to other nodes using so-called
+`mpool`. For more reference on this, please, see the source code.
+
 **Aggregation API**
 
 > Pregel aggregators are a mechanism for global communication, monitoring, and
@@ -281,7 +296,7 @@ to each vertex on each worker node.
 * `vertex:get_aggragation(name)` - get value from aggregator
 * `vertex:set_aggregation(name, value)` - set aggregator value
 
-**Topology mutation part**
+**Topology mutation API**
 
 > Some graph algorithms need to change the graph’s topology. A clustering
 > algorithm, for example, might replace each cluster with a single vertex,
