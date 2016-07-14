@@ -1,9 +1,9 @@
-<!--a href="http://tarantool.org">
+<a href="http://tarantool.org">
 	<img src="https://avatars2.githubusercontent.com/u/2344919?v=2&s=250" align="right">
-</a-->
-<a href="https://travis-ci.org/tarantool/pregel">
-	<img src="https://travis-ci.org/tarantool/pregel.png?branch=master" align="right">
 </a>
+<!--a href="https://travis-ci.org/tarantool/pregel">
+	<img src="https://travis-ci.org/tarantool/pregel.png?branch=master" align="right">
+</a-->
 
 # Large scale graph processing based on Tarantool
 
@@ -282,9 +282,13 @@ to each vertex on each worker node. It consists of the next fields:
 * `vertex:send_message(receiver_id, msg)` - send message to vertex with ID
 	`receiver_id`
 
-:ledger: Also, under the hood, every contact with other node uses message passing,
-so you may have ability to send arbitrary message to other nodes using so-called
-`mpool`. For more reference on this, please, see the source code.
+> :ledger:
+>
+> Also, under the hood, every contact with other node uses message passing,
+> so you may have ability to send arbitrary message to other nodes using so-called
+> `mpool`. For more reference on this, please, see the
+> [source](https://github.com/tarantool/pregel/blob/master/pregel/mpool.lua)
+> [code](https://github.com/tarantool/pregel/blob/master/pregel/master.lua#L56).
 
 **Aggregation API**
 
