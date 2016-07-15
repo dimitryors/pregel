@@ -315,3 +315,5 @@ to each vertex on each worker node. It consists of the next fields:
 
 If you'll change properties (add/delete vertex/edge) of currently running vertex,
 then it'll be applied immediatly after compute.
+
+## Also it contains simple Avro file reader and utils library. TBD
