@@ -5,13 +5,13 @@
 	<img src="https://travis-ci.org/tarantool/pregel.png?branch=master" align="right">
 </a-->
 
-# Large scale graph processing based on Tarantool
+# Large-scale graph processing (powered by Tarantool)
 
-Based on [Pregel whitepaper](http://kowshik.github.io/JPregel/pregel_paper.pdf).  
-Written by Kowshik Prakasam and Manasa Chandrasheka.  
-Original site located [here](http://kowshik.github.io/JPregel/index.html).
+Based on [Pregel whitepaper](http://kowshik.github.io/JPregel/pregel_paper.pdf)
+written by Kowshik Prakasam and Manasa Chandrasheka
+(see the [original site](http://kowshik.github.io/JPregel/index.html)).
 
-As 'abstract' says:
+As the 'abstract' says:
 
 > Many practical computing problems concern large graphs. Standard examples
 > include the Web graph and various social networks. The scale of these
@@ -19,7 +19,7 @@ As 'abstract' says:
 > challenges to their efficient processing. In this paper we present a
 > computational model suitable for this task. Programs are expressed as a
 > sequence of iterations, in each of which a vertex can receive messages sent
-> in the previous iteration, send mes- sages to other vertices, and modify its
+> in the previous iteration, send messages to other vertices, and modify its
 > own state and that of its outgoing edges or mutate graph topology. This
 > vertex-centric approach is flexible enough to express a broad set of
 > algorithms. The model has been designed for efficient, scalable and
@@ -29,16 +29,33 @@ As 'abstract' says:
 > The result is a framework for processing large graphs that is expressive
 > and easy to program.
 
-It's API was inspired by [Apache Giraph](http://giraph.apache.org/).
+The API was inspired by [Apache Giraph](http://giraph.apache.org/).
 
-## Configuration options
+## Table of contents
+
+* [Configuration reference](#configuration-reference)
+  * [Common configuration options (for master and worker)](#common-configuration-options-for-master-and-worker)
+  * [Preloading configuration options](#preloading-configuration-options)
+    * [API for loader](#api-for-loader)
+  * [Worker configuration options](#worker-configuration-options)
+* [Developer's guide](#developers-guide)
+  * [Master node](#master-node)
+  * [Worker node](#worker-node)
+  * [Vertex](#vertex)
+    * [API](#api)
+* [Simple Avro file reader and utils library](#simple-avro-file-reader-and-utils-library)
+
+## Configuration reference
 
 ### Common configuration options (for master and worker)
 
-* `workers` - list of all [URIs](https://tarantool.org/doc/book/configuration/index.html#uri)
-	with worker (`table` of `string`s). Neccesary to define
+* `workers` -- required -- a list of all
+  [URIs](https://tarantool.org/doc/book/configuration/index.html#uri)
+	 with workers.
 
-	Example:
+  Type: `table` of `string`s
+
+	 Example:
 
 	``` lua
 	local workers = {
@@ -61,11 +78,16 @@ It's API was inspired by [Apache Giraph](http://giraph.apache.org/).
 	local workers = generate_worker_uris(cnt)
 	```
 
-* `pool_size` - Size of outgoing pool messages (`number`).
-* `obtain_name` - Callback for obtaining name of vertex from data.
-	(`function (value) -> string`). Necessary to define
+* `pool_size` -- the size of the pool for outgoing messages.
 
-	Example:
+   Type: `number`
+
+* `obtain_name` -- required -- a callback for obtaining the vertex name from data.
+
+
+   Syntax: `function (value) -> string`
+
+  	Example:
 	``` lua
 	local function obtain_name(value)
 		return value.name
@@ -78,19 +100,19 @@ It's API was inspired by [Apache Giraph](http://giraph.apache.org/).
 
 ### Preloading configuration options
 
-* `worker_preload` - function to preload data to nodes from all workers.
-	excludes `master_preload`
+* `worker_preload` -- a function to preload data to nodes (from all workers);
+	 excludes `master_preload`
 
-	(`function (worker, opts) -> (function(self, idx, cnt) -> nil)`)
+	 Syntax: (`function (worker, opts) -> (function(self, idx, cnt) -> nil)`)
 
-* `master_preload` - function to preload data to nodes from master only
-	excludes `worker_preload`
+* `master_preload` -- a function to preload data to nodes (from the master only);
+	 excludes `worker_preload`
 
-	(`function (master, opts) -> (function(self) -> nil)`)
+	 Syntax: (`function (master, opts) -> (function(self) -> nil)`)
 
-* `preload_args` - arguments, that must be passed to loader
+* `preload_args` -- arguments that must be passed to the loader
 
-Let's start with examples of worker/master loader creation:
+Let's start with examples of creating a worker/master loader:
 
 ``` lua
 local ploader = require('pregel.loader')
@@ -110,40 +132,39 @@ local function master_loader(master, opts)
 end
 ```
 
-And then you'll provide `worker_loader`/`master_loader` as parameters in the
+Later on we'll provide `worker_loader`/`master_loader` as parameters in the
 options table.
 
 #### API for loader
 
-* `loader:store_vertex(vertex)` - arbitrary vertex object
-* `loader:store_edge(src, dest, value)` - store direct edge, that connects
-	vertices wtih names `dest` and `value`
-* `loader:store_edges_batch(edge_list)` - store a number of edges
-* `loader:store_vertex_edges(vertex, edge_list)` - combination of `store_vertex`
+* `loader:store_vertex(vertex)` -- store an arbitrary vertex object
+* `loader:store_edge(src, dest, value)` -- store the direct edge between 
+	vertices with the names `dest` and `value`
+* `loader:store_edges_batch(edge_list)` -- store a number of edges
+* `loader:store_vertex_edges(vertex, edge_list)` -- a combination of `store_vertex`
 	and `store_edges_batch`
-* `loader:flush()` - send all cached vertex
+* `loader:flush()` -- send out all cached vertices
 
 ### Worker configuration options
 
-* `worker_context` - set worker context (common object for all vertices, that
-	located on current instance of worker and can be accessed/modified by vertex).
-* `master` - [URI](https://tarantool.org/doc/book/configuration/index.html#uri)
-	of master node
-* `combiner` - combine messages, that needed to be sent to vertex
-* `compute` - compute function
+* `worker_context` -- set the worker context (a common object for all vertices
+	located on the current instance of a worker; can be accessed/modified by a vertex).
+* `master` -- [URI](https://tarantool.org/doc/book/configuration/index.html#uri)
+	of the master node
+* `combiner` -- combine messages that need to be sent to a vertex
+* `compute` -- compute function
 
-## Developing
+## Developer's guide
 
-Simple example is located in `example` folder. It finds maximum value of
-vertices by communication:
-* first step, everyone sends message with their values to their neighbor
-* if value, that vertice receive, then it, again, informs all neighbours that
-	it got value greater, than it've got before.
-* everything ends, when no message sent and every vertice is halted (everyone
-	got max before)
+In the `example` folder, we provide a simple example that finds the biggest value among all vertices using communication:
+1 First, every vertex sends a message with its current value to its neighbors.
+1 If a vertex receives a value which is greater than the value it had or received before,
+  then it informs all the neighbors.
+1 The communication is over when no messages are sent and all vertices
+  have got the biggest value.
 
-For more usages of Pregel data model you can read [paper](http://kowshik.github.io/JPregel/pregel_paper.pdf)
-or read on it's [site](http://kowshik.github.io/JPregel/).
+For more usages of Pregel data model, you can read [this paper](http://kowshik.github.io/JPregel/pregel_paper.pdf)
+and the [original site](http://kowshik.github.io/JPregel/).
 
 For example:
 * Shortest Path:
@@ -152,34 +173,33 @@ For example:
 * PageRank Algorithm
 	- http://kowshik.github.io/JPregel/developers.html#pagerank
 	- http://giraph.apache.org/pagerank.html
-* e.t.c.
+* etc.
 
-In future it's planned to write down more examples/algorithms.
+In future, we're planning to provide more examples/algorithms.
 
-Also, it's preferably to use tarantool-pregel in conjuction with [Torch](http://torch.ch/).
+Also, it's recommended to use `tarantool-pregel` in conjuction with [Torch](http://torch.ch/).
 
 > Torch is a scientific computing framework with wide support for machine
 > learning algorithms that puts GPUs first. It is easy to use and efficient,
 > thanks to an easy and fast scripting language, LuaJIT.
 
-But you shouldn't use parallelization (as it'll break Tarantool evloop) or GPU
-(since it doesn't integrated with our Fibers and it'll stop Tarantool)
+But in this case, please remember not to use parallelization (as it'll break Tarantool evloop) or GPU
+(since it isn't integrated with our fibers, so this will stop Tarantool).
 
 ### Master node
 
-Master node is something that orchestrate everything. It told workers to do
-something, it will have access to all results in the end, that workers will
-decide to give it.
+Master node is something that orchestrates everything. It tells the workers what to do
+, and it has access to all their results in the end.
 
-* `master:wait_up()` - wait while all workers are up and running.
-* `master:start()` - start task (compute everything)
-* `master:preload()` - preload all data from master
-* `master:preload_on_workers()` - preload all data from workers
-* `master:add_aggregator(name, options)` - add agreggator.
+* `master:wait_up()` -- wait until all the workers are up and running.
+* `master:start()` -- start the task (compute everything)
+* `master:preload()` -- preload all data from the master
+* `master:preload_on_workers()` -- preload all data from the workers
+* `master:add_aggregator(name, options)` -- add an aggregator
 
 	Possible options are:
-	* `default` - default value for aggregator. Can be anything.
-	* `merge` - Add new value to aggregator. Must be commutative and associative.
+	* `default` -- a default value for an aggregator. Can be anything.
+	* `merge` -- add a new value to an aggregator. Must be commutative and associative.
 
 	  Example:
 		```
@@ -188,7 +208,7 @@ decide to give it.
 		end
 		```
 
-* `master:save_snapshot()` - tell workers to save snapshot.
+* `master:save_snapshot()` -- tell the workers to save a snapshot.
 
 Typical master initialization is like that:
 
@@ -198,20 +218,20 @@ local master = pmaster.new('test', config)
 master:add_aggregator('custom', <options>)
 master:wait_up()
 master:preload_on_workers()
-<...> -- for example, you can add vertices by hand, if you need it to.
+<...> -- for example, you can add vertices manually, if you need to.
 master:save_snapshot()
 ```
 
 ### Worker node
 
 Worker node is the basic computing unit. It can't be parallelized, for now.  
-Worker maintains it's state and it's part of data (vertices and ingoing/outgoing messages).
+A worker maintains its state and its part of data (vertices and ingoing/outgoing messages).
 
-* `master:add_aggregator(name, options)` - add agreggator.
+* `master:add_aggregator(name, options)` -- add an aggregator.
 
 	Possible options are:
-	* `default` - default value for aggregator. Can be anything.
-	* `merge` - Add new value to aggregator. Must be commutative and associative.
+	* `default` -- a default value for an aggregator. Can be anything.
+	* `merge` -- add a new value to an aggregator. Must be commutative and associative.
 
 	  Example:
 		```
@@ -222,33 +242,33 @@ Worker maintains it's state and it's part of data (vertices and ingoing/outgoing
 
 ### Vertex
 
-Vertex is the least and main part of this process. Compute function is applied
-to each vertex on each worker node. It consists of the next fields:
+Vertex is the last and main part of this process. The compute function is applied
+to each vertex on each worker node. A vertex has the following fields:
 
-* Name of vertex
-* Is halted flag
+* Vertex name
+* "Is halted" flag
 * Vertex value
-* Outgoing edges (pairs of \<destination name, vertex 'weight' (it's value)\>)
+* Outgoing edges (pairs of \<destination name, vertex 'weight' (its value)\>)
 * All incoming messages
 
 #### API
 
-**Base API**:
+**Base API**
 
-* `vertex:vote_halt([is_halted = true])` - set vertex status to be halted
-* `vertex:pairs_edges()` - iterate through all edges.
+* `vertex:vote_halt([is_halted = true])` -- set the vertex status to be halted
+* `vertex:pairs_edges()` -- iterate through all edges
 
 	Example:
 	```
-	for _, neighbour, value in vertex:pairs_edges() do
+	for _, neighbor, value in vertex:pairs_edges() do
 		-- process vertex
 	end
 	```
 
-* `vertex:get_value()` - get value of vertex
-* `vertex:set_value(value)` - set value of vertex
-* `vertex:get_name()` - get name of vertex
-* `vertex:get_superstep()` - get superstep number (1 to ...)
+* `vertex:get_value()` -- get the vertex value
+* `vertex:set_value(value)` -- set the vertex value
+* `vertex:get_name()` -- get the vertex name
+* `vertex:get_superstep()` -- get the superstep number (1 to ...)
 
 **Messaging API**
 
@@ -271,7 +291,7 @@ to each vertex on each worker node. It consists of the next fields:
 > handler could, for example, create the missing vertex or remove the dangling
 > edge from its source vertex.
 
-* `vertex:pairs_messages()` - iterate through all incoming messages.
+* `vertex:pairs_messages()` -- iterate through all incoming messages.
 
 	Example:
 	```
@@ -279,16 +299,14 @@ to each vertex on each worker node. It consists of the next fields:
 		-- process all incoming messages
 	end
 	```
-* `vertex:send_message(receiver_id, msg)` - send message to vertex with ID
+* `vertex:send_message(receiver_id, msg)` -- send a message to the vertex with ID
 	`receiver_id`
 
-> :ledger:
->
-> Also, under the hood, every contact with other node uses message passing,
-> so you may have ability to send arbitrary message to other nodes using so-called
-> `mpool`. For more reference on this, please, see the
-> [source](https://github.com/tarantool/pregel/blob/master/pregel/mpool.lua)
-> [code](https://github.com/tarantool/pregel/blob/master/pregel/master.lua#L56).
+Note: Under the hood, every contact with another node involves sending a message,
+so you can send an arbitrary message to other nodes using the so-called
+`mpool`. For more reference on this, please, see the source code
+([here](https://github.com/tarantool/pregel/blob/master/pregel/mpool.lua)
+and [here](https://github.com/tarantool/pregel/blob/master/pregel/master.lua#L56)).
 
 **Aggregation API**
 
@@ -297,8 +315,8 @@ to each vertex on each worker node. It consists of the next fields:
 > system combines those values using a reduction operator, and the resulting
 > value is made available to all vertices in superstep S + 1.
 
-* `vertex:get_aggragation(name)` - get value from aggregator
-* `vertex:set_aggregation(name, value)` - set aggregator value
+* `vertex:get_aggragation(name)` -- get a value from an aggregator
+* `vertex:set_aggregation(name, value)` -- set an aggregator value
 
 **Topology mutation API**
 
@@ -308,12 +326,14 @@ to each vertex on each worker node. It consists of the next fields:
 > Just as a user’s Compute() function can send messages, it can also issue
 > requests to add or remove vertices or edges.
 
-* `vertex:add_vertex(value)` - add vertex
-* `vertex:add_edge([src = vertex:get_name(), ]dest, value)` - add edge
-* `vertex:delete_vertex([src][, vertices = true])` - delete vertex
-* `vertex:delete_edge([src = vertex:get_id(), ]dest)` - delete edge.
+* `vertex:add_vertex(value)` -- add a vertex
+* `vertex:add_edge([src = vertex:get_name(), ]dest, value)` -- add an edge
+* `vertex:delete_vertex([src][, vertices = true])` -- delete a vertex
+* `vertex:delete_edge([src = vertex:get_id(), ]dest)` -- delete an edge
 
-If you'll change properties (add/delete vertex/edge) of currently running vertex,
-then it'll be applied immediatly after compute.
+If you change the properties (add/delete vertex/edge) of a currently running vertex,
+the changes will be applied immediately after compute.
 
-## Also it contains simple Avro file reader and utils library. TBD
+## Simple Avro file reader and utils library
+
+TBD
